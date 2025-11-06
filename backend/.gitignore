@@ -1,0 +1,5 @@
+.env
+/ts-parser/node_modules
+/app/__pycache__
+/app/parsers/__pycache__
+impact_analyzer.db

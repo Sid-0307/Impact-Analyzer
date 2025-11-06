@@ -1,0 +1,20 @@
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database (SQLite - no setup needed)
+sqlalchemy==2.0.23
+
+# GitHub
+PyGithub==2.1.1
+
+# Java parsing
+javalang==0.13.0
+
+# Git
+GitPython==3.1.40
+
+# Utils
+python-dotenv==1.0.0
+pyyaml==6.0.1
