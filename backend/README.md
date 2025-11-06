@@ -59,9 +59,9 @@ curl -X POST http://localhost:8000/api/webhook \
   -H "Content-Type: application/json" \
   -d '{
     "action": "opened",
-    "number": 1,
     "pull_request": {
       "title": "Test PR",
+      "number": 1,
       "user": {"login": "testuser"}
     },
     "repository": {

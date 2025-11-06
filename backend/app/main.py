@@ -171,6 +171,23 @@ async def handle_webhook(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Webhook processing failed: {str(e)}")
 
+@app.get("/api/repos")
+def get_all_repos(db: Session = Depends(get_db)):
+    """Get all onboarded repositories"""
+    repos = db.query(Repository).order_by(Repository.created_at.desc()).all()
+
+    return [
+        {
+            "id": repo.id,
+            "name": repo.name,
+            "url": repo.url,
+            "type": repo.type,
+            "created_at": repo.created_at.isoformat() if hasattr(repo, "created_at") else None
+        }
+        for repo in repos
+    ]
+
+
 @app.get("/api/prs")
 def get_all_prs(db: Session = Depends(get_db)):
     """Get all analyzed PRs"""
@@ -187,7 +204,7 @@ def get_all_prs(db: Session = Depends(get_db)):
         "created_at": pr.created_at.isoformat()
     } for pr in prs]
 
-@app.get("/api/graph/{repo_name}")
+@app.get("/api/graph")
 def get_dependency_graph(repo_name: str, db: Session = Depends(get_db)):
     """Get dependency graph for a repo"""
     repo = db.query(Repository).filter(Repository.name == repo_name).first()
