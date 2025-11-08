@@ -56,15 +56,19 @@ def onboard_repos(request: OnboardRequest, db: Session = Depends(get_db)):
     try:
         # 1. Clone/pull repos
         backend_path = clone_or_pull_repo(request.backend_repo_url)
+        print(f"📁 Backend path: {backend_path}")
+        print(f"📁 Java files found: {list(backend_path.rglob('*.java'))}")
         frontend_path = clone_or_pull_repo(request.frontend_repo_url)
         
         # 2. Parse backend (Java)
         java_parser = JavaParser(str(backend_path))
         backend_graph = java_parser.parse()
+        print("🔍 BACKEND GRAPH:", json.dumps(backend_graph, indent=2))
         
         # 3. Parse frontend (TypeScript)
         ts_parser = TypeScriptParser(str(frontend_path))
         frontend_graph = ts_parser.parse()
+        print("🔍 FRONTEND GRAPH:", json.dumps(frontend_graph, indent=2))
         
         # 4. Build combined dependency graph
         combined_graph = DependencyGraph(backend_graph, frontend_graph)

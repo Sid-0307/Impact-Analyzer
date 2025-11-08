@@ -23,11 +23,19 @@ class DependencyGraph:
             self.graph["nodes"].append(node)
         
         # Add all edges
-        self.graph["edges"].extend(backend.get("edges", []))
-        self.graph["edges"].extend(frontend.get("edges", []))
+        for edge in backend.get("edges", []):
+            edge["repo"] = "backend"
+            self.graph["edges"].append(edge)
+        
+        for edge in frontend.get("edges", []):
+            edge["repo"] = "frontend"
+            self.graph["edges"].append(edge)
         
         # Store endpoints
         self.graph["endpoints"] = backend.get("endpoints", [])
+        
+        # Store HTTP calls from frontend (IMPORTANT for cross-linking)
+        self.graph["http_calls"] = frontend.get("http_calls", [])
     
     def _link_cross_repo(self):
         """Link backend endpoints to frontend HTTP calls"""

@@ -22,7 +22,7 @@ class JavaParser:
         return self.graph
     
     def _parse_source_file(self, file_path: Path):
-        """Parse controllers and services"""
+        """Parse controllers, services, and models"""
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -32,30 +32,80 @@ class JavaParser:
             for path, node in tree.filter(javalang.tree.ClassDeclaration):
                 class_name = node.name
                 
-                # Check if it's a controller
-                is_controller = any(
-                    anno.name in ['RestController', 'Controller'] 
-                    for anno in (node.annotations or [])
-                )
+                # Check annotations
+                annotations = [anno.name for anno in (node.annotations or [])]
                 
-                # Check if it's a service
-                is_service = any(
-                    anno.name == 'Service' 
-                    for anno in (node.annotations or [])
-                )
+                is_controller = any(a in ['RestController', 'Controller'] for a in annotations)
+                is_service = 'Service' in annotations
+                is_repository = 'Repository' in annotations
+                is_entity = 'Entity' in annotations
                 
+                # Track ALL classes (models, entities, etc.)
+                is_model = not (is_controller or is_service or is_repository) and not is_entity
+                
+                # Add class node
+                class_id = f"{class_name}"
+                class_type = 'controller' if is_controller else 'service' if is_service else 'repository' if is_repository else 'entity' if is_entity else 'model'
+                
+                self.graph["nodes"].append({
+                    "id": class_id,
+                    "type": class_type,
+                    "file": str(file_path.relative_to(self.repo_path))
+                })
+                
+                # Parse fields to track model dependencies
+                for field in node.fields:
+                    field_type = self._get_field_type(field)
+                    if field_type and field_type != class_name:
+                        # Model uses another model/entity
+                        self.graph["edges"].append({
+                            "from": class_id,
+                            "to": field_type,
+                            "type": "uses"
+                        })
+                
+                # Parse methods
                 for method in node.methods:
                     method_id = f"{class_name}.{method.name}"
                     
                     if is_controller:
-                        self._parse_controller_method(method_id, method, file_path, content)
-                    elif is_service:
-                        self._parse_service_method(method_id, method, file_path)
+                        self._parse_controller_method(method_id, method, file_path, content, class_name)
+                    else:
+                        # Add method node for services/models
+                        self.graph["nodes"].append({
+                            "id": method_id,
+                            "type": f"{class_type}_method",
+                            "file": str(file_path.relative_to(self.repo_path)),
+                            "class": class_name
+                        })
+                    
+                    # Track method parameter types (models used)
+                    for param in method.parameters:
+                        param_type = self._get_type_name(param.type)
+                        if param_type:
+                            self.graph["edges"].append({
+                                "from": method_id,
+                                "to": param_type,
+                                "type": "uses"
+                            })
+                    
+                    # Track return type
+                    if method.return_type:
+                        return_type = self._get_type_name(method.return_type)
+                        if return_type:
+                            self.graph["edges"].append({
+                                "from": method_id,
+                                "to": return_type,
+                                "type": "returns"
+                            })
+                    
+                    # Find method calls
+                    self._extract_method_calls(method_id, method, content)
         
         except Exception as e:
             print(f"Error parsing {file_path}: {e}")
     
-    def _parse_controller_method(self, method_id: str, method, file_path: Path, content: str):
+    def _parse_controller_method(self, method_id: str, method, file_path: Path, content: str, class_name: str):
         """Extract endpoint mappings from controller methods"""
         endpoint_info = None
         
@@ -81,8 +131,9 @@ class JavaParser:
         # Add controller method node
         self.graph["nodes"].append({
             "id": method_id,
-            "type": "controller",
+            "type": "controller_method",
             "file": str(file_path.relative_to(self.repo_path)),
+            "class": class_name,
             "endpoint": endpoint_info
         })
         
@@ -150,6 +201,26 @@ class JavaParser:
                 "to": possible_target,
                 "type": "calls"
             })
+    
+    
+    def _get_field_type(self, field) -> str:
+        """Extract field type name"""
+        if hasattr(field, 'type'):
+            return self._get_type_name(field.type)
+        return None
+    
+    def _get_type_name(self, type_obj) -> str:
+        """Extract type name from javalang type object"""
+        if not type_obj:
+            return None
+        
+        if hasattr(type_obj, 'name'):
+            return type_obj.name
+        
+        if hasattr(type_obj, 'type') and hasattr(type_obj.type, 'name'):
+            return type_obj.type.name  # For generics like List<Model>
+        
+        return str(type_obj)
     
     def _infer_tested_method(self, test_name: str, content: str) -> str:
         """Heuristic to find which method is being tested"""
