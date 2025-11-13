@@ -1,0 +1,66 @@
+[
+  {
+    "file": "src\\app\\data.service.ts",
+    "class": "DataService",
+    "decorators": [
+      "Injectable({\r\n  providedIn: 'root'\r\n})"
+    ],
+    "properties": [
+      {
+        "name": "apiUrl",
+        "type": "string",
+        "initializer": "'http://backend.com/api/data'"
+      }
+    ],
+    "function": "DataService.postData",
+    "access": "public",
+    "method": "post",
+    "url": "http://backend.com/api/data/post",
+    "params": "{ responseType: 'text' }",
+    "body": "data",
+    "parameterDetails": [
+      {
+        "name": "data",
+        "type": "import(\"C:/Users/Siddharth/Desktop/impact-analyser/backend/app/repos/frontend-test/src/app/my-request\").MyRequest"
+      }
+    ],
+    "returnType": "Observable<string>",
+    "doc": "Handles the POST request to send data as a JSON body.",
+    "location": {
+      "line": 20,
+      "column": 3
+    }
+  },
+  {
+    "file": "src\\app\\data.service.ts",
+    "class": "DataService",
+    "decorators": [
+      "Injectable({\r\n  providedIn: 'root'\r\n})"
+    ],
+    "properties": [
+      {
+        "name": "apiUrl",
+        "type": "string",
+        "initializer": "'http://backend.com/api/data'"
+      }
+    ],
+    "function": "DataService.getData",
+    "access": "public",
+    "method": "get",
+    "url": "http://backend.com/api/data/get",
+    "params": null,
+    "body": null,
+    "parameterDetails": [
+      {
+        "name": "data",
+        "type": "import(\"C:/Users/Siddharth/Desktop/impact-analyser/backend/app/repos/frontend-test/src/app/my-request\").MyRequest"
+      }
+    ],
+    "returnType": "Observable<string>",
+    "doc": "Handles the GET request to send data as query parameters.",
+    "location": {
+      "line": 33,
+      "column": 3
+    }
+  }
+]

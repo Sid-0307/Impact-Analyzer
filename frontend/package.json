@@ -20,6 +20,7 @@
     "ngx-markdown": "^17.2.1",
     "rxjs": "^7.8.2",
     "tslib": "^2.3.0",
+    "vis-data": "^7.1.10",
     "vis-network": "^9.1.13",
     "zone.js": "^0.14.0"
   },

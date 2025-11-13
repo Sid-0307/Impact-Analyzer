@@ -684,7 +684,7 @@ export class DependencyGraphComponent implements OnInit, AfterViewInit {
       options
     );
 
-    this.network.on('click', (params) => {
+    this.network.on('click', (params: any) => {
       if (params.nodes.length > 0) {
         const nodeId = params.nodes[0];
         const node = this.graph?.nodes.find((n) => n.id === nodeId);
@@ -694,7 +694,7 @@ export class DependencyGraphComponent implements OnInit, AfterViewInit {
       }
     });
 
-    this.network.on('doubleClick', (params) => {
+    this.network.on('doubleClick', (params: any) => {
       if (params.nodes.length > 0) {
         this.network?.focus(params.nodes[0], {
           scale: 1.5,

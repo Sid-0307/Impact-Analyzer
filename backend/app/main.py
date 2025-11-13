@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
 import json
+import traceback
+from pathlib import Path
 
 from database import get_db, init_db
 from models import Repository, PullRequest
@@ -53,50 +55,108 @@ def health_check():
 def onboard_repos(request: OnboardRequest, db: Session = Depends(get_db)):
     """Onboard both repos and build dependency graph"""
     
+    print(f"\n{'='*70}")
+    print(f"🚀 ONBOARDING REQUEST: Backend={request.backend_repo_url}, Frontend={request.frontend_repo_url}")
+    print(f"{'='*70}\n")
+    
     try:
         # 1. Clone/pull repos
-        backend_path = clone_or_pull_repo(request.backend_repo_url)
-        print(f"📁 Backend path: {backend_path}")
-        print(f"📁 Java files found: {list(backend_path.rglob('*.java'))}")
-        frontend_path = clone_or_pull_repo(request.frontend_repo_url)
+        print("[STEP 1] Cloning/pulling repositories...")
+        try:
+            backend_path = clone_or_pull_repo(request.backend_repo_url)
+            print(f"  ✅ Backend cloned to: {backend_path}")
+            java_files = list(backend_path.rglob('*.java'))
+            print(f"  ✅ Found {len(java_files)} Java files")
+            if java_files:
+                print(f"      Examples: {[str(f.relative_to(backend_path)) for f in java_files[:3]]}")
+        except Exception as e:
+            print(f"  ❌ Backend cloning failed: {e}")
+            raise
+        
+        try:
+            frontend_path = clone_or_pull_repo(request.frontend_repo_url)
+            print(f"  ✅ Frontend cloned to: {frontend_path}")
+            ts_files = list(frontend_path.rglob('*.ts')) + list(frontend_path.rglob('*.js'))
+            print(f"  ✅ Found {len(ts_files)} TypeScript/JS files")
+        except Exception as e:
+            print(f"  ❌ Frontend cloning failed: {e}")
+            raise
         
         # 2. Parse backend (Java)
-        java_parser = JavaParser(str(backend_path))
-        backend_graph = java_parser.parse()
-        print("🔍 BACKEND GRAPH:", json.dumps(backend_graph, indent=2))
+        print("\n[STEP 2] Parsing Spring Boot backend...")
+        try:
+            java_parser = JavaParser(str(backend_path))
+            backend_graph = java_parser.parse()
+            print(f"  ✅ Backend parsed successfully")
+            print(f"     - Nodes: {len(backend_graph.get('nodes', []))}")
+            print(f"     - Edges: {len(backend_graph.get('edges', []))}")
+            print(f"     - Endpoints: {len(backend_graph.get('endpoints', []))}")
+            print(f"     - Classes: {len(backend_graph.get('classes', {}))}")
+            print(f"     - Methods: {len(backend_graph.get('methods', {}))}")
+        except Exception as e:
+            print(f"  ❌ Java parsing failed: {e}")
+            traceback.print_exc()
+            raise
         
         # 3. Parse frontend (TypeScript)
-        ts_parser = TypeScriptParser(str(frontend_path))
-        frontend_graph = ts_parser.parse()
-        print("🔍 FRONTEND GRAPH:", json.dumps(frontend_graph, indent=2))
+        print("\n[STEP 3] Parsing Angular frontend...")
+        try:
+            ts_parser = TypeScriptParser(str(frontend_path))
+            frontend_graph = ts_parser.parse()
+            print(f"  ✅ Frontend parsed successfully")
+            print(f"     - Nodes: {len(frontend_graph.get('nodes', []))}")
+            print(f"     - Edges: {len(frontend_graph.get('edges', []))}")
+            print(f"     - HTTP calls: {len(frontend_graph.get('http_calls', []))}")
+        except Exception as e:
+            print(f"  ❌ TypeScript parsing failed: {e}")
+            traceback.print_exc()
+            raise
         
         # 4. Build combined dependency graph
-        combined_graph = DependencyGraph(backend_graph, frontend_graph)
-        graph_dict = combined_graph.to_dict()
+        print("\n[STEP 4] Building combined dependency graph...")
+        try:
+            combined_graph = DependencyGraph(backend_graph, frontend_graph)
+            graph_dict = combined_graph.to_dict()
+            print(f"  ✅ Graph built successfully")
+            print(f"     - Total nodes: {len(graph_dict['nodes'])}")
+            print(f"     - Total edges: {len(graph_dict['edges'])}")
+            print(f"     - Cross-repo edges: {len([e for e in graph_dict['edges'] if e.get('repo') == 'cross_repo'])}")
+        except Exception as e:
+            print(f"  ❌ Graph building failed: {e}")
+            traceback.print_exc()
+            raise
         
         # 5. Save to database
-        backend_repo = Repository(
-            url=request.backend_repo_url,
-            name=extract_repo_full_name(request.backend_repo_url),
-            type="backend",
-            graph_json=json.dumps(backend_graph)
-        )
+        print("\n[STEP 5] Saving to database...")
+        try:
+            backend_repo = Repository(
+                url=request.backend_repo_url,
+                name=extract_repo_full_name(request.backend_repo_url),
+                type="backend",
+                graph_json=json.dumps(backend_graph)
+            )
+            
+            frontend_repo = Repository(
+                url=request.frontend_repo_url,
+                name=extract_repo_full_name(request.frontend_repo_url),
+                type="frontend",
+                graph_json=json.dumps(frontend_graph)
+            )
+            
+            db.add(backend_repo)
+            db.add(frontend_repo)
+            db.commit()
+            print(f"  ✅ Repositories saved to database")
+            print(f"     - Backend: {backend_repo.name}")
+            print(f"     - Frontend: {frontend_repo.name}")
+        except Exception as e:
+            print(f"  ❌ Database save failed: {e}")
+            traceback.print_exc()
+            raise
         
-        frontend_repo = Repository(
-            url=request.frontend_repo_url,
-            name=extract_repo_full_name(request.frontend_repo_url),
-            type="frontend",
-            graph_json=json.dumps(frontend_graph)
-        )
-        
-        db.add(backend_repo)
-        db.add(frontend_repo)
-        db.commit()
-        
-        # 6. Create webhooks (optional for local dev)
-        # webhook_url = "http://your-server.com/api/webhook"
-        # github_service.create_webhook(backend_repo.name, webhook_url)
-        # github_service.create_webhook(frontend_repo.name, webhook_url)
+        print(f"\n{'='*70}")
+        print(f"✅ ONBOARDING SUCCESSFUL!")
+        print(f"{'='*70}\n")
         
         return {
             "status": "success",
@@ -109,6 +169,13 @@ def onboard_repos(request: OnboardRequest, db: Session = Depends(get_db)):
         }
     
     except Exception as e:
+        print(f"\n{'='*70}")
+        print(f"❌ ONBOARDING FAILED!")
+        print(f"{'='*70}")
+        print(f"\nError: {str(e)}\n")
+        print("Full traceback:")
+        traceback.print_exc()
+        print(f"\n{'='*70}\n")
         raise HTTPException(status_code=500, detail=f"Onboarding failed: {str(e)}")
 
 @app.post("/api/webhook")

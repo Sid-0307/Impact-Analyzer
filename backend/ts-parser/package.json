@@ -1,6 +1,7 @@
 {
   "name": "ts-parser",
   "version": "1.0.0",
+  "type": "module",
   "dependencies": {
     "ts-morph": "^21.0.0"
   }
