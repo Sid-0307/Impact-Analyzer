@@ -30,6 +30,8 @@ dependencies {
 	implementation 'com.github.javaparser:javaparser-core:3.25.10'
 	implementation 'com.fasterxml.jackson.core:jackson-databind:2.11.0'
         implementation 'net.sf.py4j:py4j:0.10.9.9' 
+	implementation 'org.eclipse.jgit:org.eclipse.jgit:7.4.0.202509020913-r'
+
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
