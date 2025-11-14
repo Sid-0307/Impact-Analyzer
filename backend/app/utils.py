@@ -8,14 +8,8 @@ def clone_or_pull_repo(repo_url: str) -> Path:
     repo_name = repo_url.split('/')[-1].replace('.git', '')
     repo_path = settings.repos_path / repo_name
     
-    if repo_path.exists():
-        # Pull latest changes
-        repo = Repo(repo_path)
-        repo.remotes.origin.pull()
-    else:
-        # Clone
-        settings.repos_path.mkdir(parents=True, exist_ok=True)
-        Repo.clone_from(repo_url, repo_path)
+    settings.repos_path.mkdir(parents=True, exist_ok=True)
+    Repo.clone_from(repo_url, repo_path)
     
     return repo_path
 

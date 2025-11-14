@@ -10,18 +10,26 @@ import py4j.GatewayServer;
 @Component
 public class Py4jGatewayStarter implements CommandLineRunner {
 
-	private final AnalyzerService analyzerService;
 	private GatewayServer gatewayServer;
 	private final int gatewayPort = 25333;
 
-	public Py4jGatewayStarter(AnalyzerService analyzerService) {
-        this.analyzerService = analyzerService;
+
+    public class EntryPoint {
+        private AnalyzerService analyzerService;
+        public EntryPoint() {
+            analyzerService = new AnalyzerService();
+        }
+
+        public AnalyzerService getService() {
+            return analyzerService;
+        }
     }
+
 
     @Override
     public void run(String... args) throws Exception {
 
-        gatewayServer = new GatewayServer(analyzerService, gatewayPort);
+        gatewayServer = new GatewayServer(new EntryPoint(), gatewayPort);
         gatewayServer.start();
         System.out.println("Py4J Gateway Server started on port " + gatewayPort);
 

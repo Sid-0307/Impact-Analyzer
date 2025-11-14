@@ -24,10 +24,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Comparator;
 
-@Service
 public class AnalyzerService {
 
-	public void parse(String url) throws Exception{
+	public String parse(String url) throws Exception{
 		Map<String, Map<String, String>> typeFieldsMap = new HashMap<>();
 		String repoRoot = cloneRepo(url);
 		List<File> javaFiles = Files.walk(new File(repoRoot).toPath())
@@ -128,7 +127,7 @@ public class AnalyzerService {
 		}
 
 		ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-		mapper.writeValue(new File("controller_methods.json"),controllerInfos);
+		return mapper.writeValueAsString(controllerInfos);
 	}
 
 
