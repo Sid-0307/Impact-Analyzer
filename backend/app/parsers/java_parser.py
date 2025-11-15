@@ -4,21 +4,23 @@ import re
 from pathlib import Path
 from typing import Dict, List
 
+from py4j.java_gateway import JavaGateway
+
 class JavaParser:
-    def __init__(self, repo_path: str):
-        self.repo_path = Path(repo_path)
+    def __init__(self, git_url: str):
+        self.git_url = git_url
         self.graph = {"nodes": [], "edges": [], "endpoints": []}
     
     def parse(self) -> Dict:
-        """Parse all Java files and build dependency graph"""
-        java_files = list(self.repo_path.rglob("*.java"))
-        
-        for file_path in java_files:
-            if "test" in str(file_path).lower():
-                self._parse_test_file(file_path)
-            else:
-                self._parse_source_file(file_path)
-        
+        try:
+            gateway = JavaGateway()
+        except Exception as e:
+            print(f"Could not connect to Java Gateway. Is the Spring app running? Error: {e}")
+            return self.graph
+        entry_point = gateway.entry_point
+        service = entry_point.getService()
+        result = service.parse(this.git_url)
+        print(result)
         return self.graph
     
     def _parse_source_file(self, file_path: Path):

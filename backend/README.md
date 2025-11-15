@@ -32,6 +32,7 @@ Get GitHub token: https://github.com/settings/tokens (need `repo` scope)
 
 ```bash
 cd app
+./analyzer/gradlew --project-dir ./analyzer/ bootRun &
 python main.py
 ```
 

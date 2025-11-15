@@ -85,7 +85,7 @@ def onboard_repos(request: OnboardRequest, db: Session = Depends(get_db)):
         # 2. Parse backend (Java)
         print("\n[STEP 2] Parsing Spring Boot backend...")
         try:
-            java_parser = JavaParser(str(backend_path))
+            java_parser = JavaParser(request.backend_repo_url)
             backend_graph = java_parser.parse()
             print(f"  ✅ Backend parsed successfully")
             print(f"     - Nodes: {len(backend_graph.get('nodes', []))}")
