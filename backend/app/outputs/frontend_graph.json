@@ -1,9 +1,9 @@
 [
   {
-    "file": "src\\app\\data.service.ts",
+    "file": "src/app/data.service.ts",
     "class": "DataService",
     "decorators": [
-      "Injectable({\r\n  providedIn: 'root'\r\n})"
+      "Injectable({\n  providedIn: 'root'\n})"
     ],
     "properties": [
       {
@@ -21,7 +21,7 @@
     "parameterDetails": [
       {
         "name": "data",
-        "type": "import(\"C:/Users/Siddharth/Desktop/impact-analyser/backend/app/repos/frontend-test/src/app/my-request\").MyRequest"
+        "type": "import(\"/home/nitheesh/code/Impact-Analyzer/backend/app/repos/frontend-test/src/app/my-request\").MyRequest"
       }
     ],
     "returnType": "Observable<string>",
@@ -32,10 +32,10 @@
     }
   },
   {
-    "file": "src\\app\\data.service.ts",
+    "file": "src/app/data.service.ts",
     "class": "DataService",
     "decorators": [
-      "Injectable({\r\n  providedIn: 'root'\r\n})"
+      "Injectable({\n  providedIn: 'root'\n})"
     ],
     "properties": [
       {
@@ -53,7 +53,7 @@
     "parameterDetails": [
       {
         "name": "data",
-        "type": "import(\"C:/Users/Siddharth/Desktop/impact-analyser/backend/app/repos/frontend-test/src/app/my-request\").MyRequest"
+        "type": "import(\"/home/nitheesh/code/Impact-Analyzer/backend/app/repos/frontend-test/src/app/my-request\").MyRequest"
       }
     ],
     "returnType": "Observable<string>",

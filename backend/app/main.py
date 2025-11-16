@@ -69,7 +69,7 @@ def onboard_repos(request: OnboardRequest, db: Session = Depends(get_db)):
         
         # 2. Parse backend (Java)
         try:
-            java_parser = JavaParser(request.backend_repo_url)
+            java_parser = JavaParser(backend_path)
             backend_graph = java_parser.parse()
             print("\nBackend parsed successfully")
         except Exception as e:
@@ -88,20 +88,20 @@ def onboard_repos(request: OnboardRequest, db: Session = Depends(get_db)):
             raise
         
         # 4. Build combined dependency graph
-        try:
-            combined_graph = DependencyGraph(backend_graph, frontend_graph)
-            graph_dict = combined_graph.to_dict()
-            print("\nCombined dependency graph built successfully")
-            
-            outputs_dir = backend_path.parent.parent / "outputs"
-            outputs_dir.mkdir(parents=True, exist_ok=True)
-            dep_out = outputs_dir / "dependency_graph.json"
-            with open(dep_out, 'w', encoding='utf-8') as f:
-                json.dump(graph_dict, f, indent=2)
-        except Exception as e:
-            print(f"  ❌ Graph building failed: {e}")
-            traceback.print_exc()
-            raise
+        # try:
+        #     combined_graph = DependencyGraph(backend_graph, frontend_graph)
+        #     graph_dict = combined_graph.to_dict()
+        #     print("\nCombined dependency graph built successfully")
+        #
+        #     outputs_dir = backend_path.parent.parent / "outputs"
+        #     outputs_dir.mkdir(parents=True, exist_ok=True)
+        #     dep_out = outputs_dir / "dependency_graph.json"
+        #     with open(dep_out, 'w', encoding='utf-8') as f:
+        #         json.dump(graph_dict, f, indent=2)
+        # except Exception as e:
+        #     print(f"  ❌ Graph building failed: {e}")
+        #     traceback.print_exc()
+        #     raise
         
         # 5. Save to database
         try:

@@ -13,12 +13,11 @@ import com.github.javaparser.ast.body.RecordDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
 import java.io.File;
+import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -26,9 +25,10 @@ import java.util.Comparator;
 
 public class AnalyzerService {
 
-	public String parse(String url) throws Exception{
+	public String parse(String repoPath) throws Exception{
+		System.out.println("Parsing " + repoPath);
 		Map<String, Map<String, String>> typeFieldsMap = new HashMap<>();
-		String repoRoot = cloneRepo(url);
+		String repoRoot = getSrcFolder(repoPath);
 		List<File> javaFiles = Files.walk(new File(repoRoot).toPath())
 		.filter(p -> p.toString().endsWith(".java"))
 		.map(java.nio.file.Path::toFile)
@@ -176,54 +176,24 @@ public class AnalyzerService {
 
 
 
-	private String cloneRepo(String repoUrl) throws IOException, GitAPIException {
-Path tempRepoDir = Files.createTempDirectory("git-analysis-");
-        System.out.println("Cloning repository from " + repoUrl + " into: " + tempRepoDir);
-
+	private String getSrcFolder(String path) throws IOException{
+	Path tempRepoDir = Paths.get("../" + path);
         try {
-            // 2. Clone the repository
-            Git.cloneRepository()
-                .setURI(repoUrl)
-                .setDirectory(tempRepoDir.toFile())
-                .call();
-
             // 3. Construct the path to src/main
             Path srcMainPath = tempRepoDir.resolve("src").resolve("main");
 
             // 4. Validate that the directory exists (common convention for Java/Maven/Gradle projects)
             if (!Files.exists(srcMainPath) || !Files.isDirectory(srcMainPath)) {
                 // If the path doesn't exist, we clean up the temporary directory immediately
-                cleanup(tempRepoDir);
                 throw new RuntimeException("Could not find 'src/main' directory in the cloned repository at: " + srcMainPath);
             }
 
             System.out.println("Successfully cloned and found src/main at: " + srcMainPath);
-            // Return the path. The caller is responsible for cleaning up the tempRepoDir 
-            // once analysis is complete using the cleanup method provided below.
             return srcMainPath.toString();
 
-        } catch (GitAPIException | RuntimeException e) {
-            // Ensure cleanup is attempted if cloning or path validation fails
-            cleanup(tempRepoDir);
+        } catch (RuntimeException e) {
             throw e; 
         }
 	}
 
-
-public void cleanup(Path repoPath) {
-        if (repoPath == null || !Files.exists(repoPath)) {
-            return;
-        }
-        System.out.println("Initiating cleanup of temporary directory: " + repoPath);
-        try {
-            Files.walk(repoPath)
-                 // Sort in reverse order (files before directories) for safe deletion
-                .sorted(Comparator.reverseOrder()) 
-                .map(Path::toFile)
-                .forEach(File::delete);
-            System.out.println("Cleanup successful.");
-        } catch (IOException e) {
-            System.err.println("Failed to delete directory " + repoPath + ": " + e.getMessage());
-        }
-    }
 }

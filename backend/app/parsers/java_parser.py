@@ -1,14 +1,15 @@
 import javalang
 import os
 import re
+import json
 from pathlib import Path
 from typing import Dict, List
 
 from py4j.java_gateway import JavaGateway
 
 class JavaParser:
-    def __init__(self, git_url: str):
-        self.git_url = git_url
+    def __init__(self, backend_path: str):
+        self.backend_path = backend_path
         self.graph = {"nodes": [], "edges": [], "endpoints": []}
     
     def parse(self) -> Dict:
@@ -19,8 +20,16 @@ class JavaParser:
             return self.graph
         entry_point = gateway.entry_point
         service = entry_point.getService()
-        result = service.parse(self.git_url)
-        print(result)
+        result = service.parse(str(self.backend_path))
+
+        filepath = "./outputs/backend_graph.json"
+        try:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(result)
+        except IOError as e:
+            print(f"\nAn error occurred while writing to the file: {e}")
+
+        self.graph = json.loads(result)
         return self.graph
     
     def _parse_source_file(self, file_path: Path):

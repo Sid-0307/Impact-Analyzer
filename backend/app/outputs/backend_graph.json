@@ -1,0 +1,23 @@
+[ {
+  "Path" : "/post",
+  "Input" : {
+    "request" : {
+      "name" : "String",
+      "value" : "int"
+    }
+  },
+  "Output" : "String",
+  "Filepath" : "../repos/backend-test/src/main/java/com/example/demo/controllers/MyController.java",
+  "Method" : "POST"
+}, {
+  "Path" : "/get",
+  "Input" : {
+    "request" : {
+      "name" : "String",
+      "value" : "int"
+    }
+  },
+  "Output" : "String",
+  "Filepath" : "../repos/backend-test/src/main/java/com/example/demo/controllers/MyController.java",
+  "Method" : "GET"
+} ]

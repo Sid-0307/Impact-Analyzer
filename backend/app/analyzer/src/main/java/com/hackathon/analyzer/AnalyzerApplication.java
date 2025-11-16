@@ -9,6 +9,8 @@ import org.springframework.context.annotation.ComponentScan;
 public class AnalyzerApplication {
 	
 	public static void main(String[] args) throws Exception {
+		String currentDirectory = System.getProperty("user.dir");
+		System.out.println("Current directory " + currentDirectory);
 		SpringApplication.run(AnalyzerApplication.class,args);
 	}
 
