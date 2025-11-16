@@ -30,10 +30,11 @@ Get GitHub token: https://github.com/settings/tokens (need `repo` scope)
 
 ### 4. Run Server
 
-```bash
-cd app
+````bash
+cd backend
 ./analyzer/gradlew --project-dir ./analyzer/ bootRun &
-python main.py
+cd app
+uvicorn main:app --reload
 ```
 
 Server runs on `http://localhost:8000`
@@ -48,8 +49,8 @@ Server runs on `http://localhost:8000`
 curl -X POST http://localhost:8000/api/onboard \
   -H "Content-Type: application/json" \
   -d '{
-    "backend_repo_url": "https://github.com/spring-projects/spring-petclinic",
-    "frontend_repo_url": "https://github.com/your-org/angular-frontend"
+    "backend_repo_url": "https://github.com/Madraceee/backend-test",
+    "frontend_repo_url": "https://github.com/Madraceee/frontend-test"
   }'
 ```
 
@@ -61,12 +62,12 @@ curl -X POST http://localhost:8000/api/webhook \
   -d '{
     "action": "opened",
     "pull_request": {
-      "title": "Test PR",
+      "title": "added java parser",
       "number": 1,
-      "user": {"login": "testuser"}
+      "user": {"login": "Madraceee"}
     },
     "repository": {
-      "full_name": "owner/repo"
+      "full_name": "Madraceee/backend-test"
     }
   }'
 ```
@@ -106,3 +107,4 @@ Since webhooks need a public URL, you can:
 1. Test with real Spring Boot + Angular repos
 2. Add frontend Angular dashboard
 3. Deploy to cloud (Render/Railway/Heroku)
+````

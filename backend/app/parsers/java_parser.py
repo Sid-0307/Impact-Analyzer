@@ -19,7 +19,7 @@ class JavaParser:
             return self.graph
         entry_point = gateway.entry_point
         service = entry_point.getService()
-        result = service.parse(this.git_url)
+        result = service.parse(self.git_url)
         print(result)
         return self.graph
     

@@ -3,3 +3,4 @@
 /app/__pycache__
 /app/parsers/__pycache__
 impact_analyzer.db
+/repos
