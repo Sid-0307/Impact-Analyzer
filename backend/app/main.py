@@ -43,9 +43,24 @@ class WebhookPayload(BaseModel):
     pull_request: dict
     repository: dict
 
+class ScanRequest(BaseModel):
+    repo_url: str
+    commit: str
+    data: List[dict]
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.post("/api/scan")
+def store_scan(request: ScanRequest):
+    try:
+        print(request)
+        return {"status": "ok"}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Scan failed: {str(e)}")
+
 
 @app.post("/api/onboard")
 def onboard_repos(request: OnboardRequest, db: Session = Depends(get_db)):
