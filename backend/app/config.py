@@ -6,7 +6,8 @@ class Settings(BaseSettings):
     github_token: str
     repos_path: Path = Path("./repos")
     database_url: str = "sqlite:///./impact_analyzer.db"
-    
+    gemini_api_key: str
+
     class Config:
         env_file = os.path.join(os.path.dirname(__file__), '..', '.env')
 
