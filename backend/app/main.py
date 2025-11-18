@@ -8,7 +8,7 @@ import traceback
 from pathlib import Path
 
 from database import get_db, init_db
-from models import Repository, PullRequest
+from models import Repository, PullRequest, ScanDetails
 from parsers.java_parser import JavaParser
 from parsers.ts_parser import TypeScriptParser
 from parsers.dependency_graph import DependencyGraph
@@ -46,6 +46,7 @@ class WebhookPayload(BaseModel):
 class ScanRequest(BaseModel):
     repo_url: str
     commit: str
+    tag_name: str
     data: List[dict]
 
 @app.get("/health")
@@ -53,9 +54,17 @@ def health_check():
     return {"status": "ok"}
 
 @app.post("/api/scan")
-def store_scan(request: ScanRequest):
+def store_scan(request: ScanRequest, db: Session = Depends(get_db)):
     try:
         print(request)
+        scan_details = ScanDetails(
+            repo_url=request.repo_url,
+            commit=request.commit,
+            tag_name=request.tag_name,
+            data=json.dumps(request.data)
+        )
+        db.add(scan_details)
+        db.commit()
         return {"status": "ok"}
     except Exception as e:
         traceback.print_exc()

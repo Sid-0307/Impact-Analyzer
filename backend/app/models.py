@@ -41,3 +41,21 @@ class PullRequest(Base):
     @impact.setter
     def impact(self, value):
         self.impact_json = json.dumps(value)
+
+class ScanDetails(Base):
+    __tablename__ = "scan_details"
+    
+    id = Column(Integer, primary_key=True)
+    repo_url = Column(String)
+    commit = Column(String)
+    tag_name = Column(String)
+    data = Column(Text)  # Store dependency graph as JSON string
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    @property
+    def impact(self):
+        return json.loads(self.impact_json) if self.impact_json else {}
+    
+    @impact.setter
+    def impact(self, value):
+        self.impact_json = json.dumps(value)
