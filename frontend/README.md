@@ -1,135 +1,16 @@
-# Impact Analyzer - Angular Frontend
+# React + Vite
 
-## Setup
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-### 1. Install Angular CLI (if not installed)
+Currently, two official plugins are available:
 
-```bash
-npm install -g @angular/cli@17
-```
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-### 2. Create Project
+## React Compiler
 
-```bash
-ng new impact-analyzer-frontend --routing --style=scss --standalone
-cd impact-analyzer-frontend
-```
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-### 3. Install Dependencies
+## Expanding the ESLint configuration
 
-```bash
-npm install @angular/material @angular/cdk vis-network vis-data
-```
-
-### 4. Copy All Files
-
-Copy all the provided component files into your `src/app/` directory following the structure:
-
-```
-src/app/
-├── components/
-│   ├── pr-list/
-│   ├── pr-detail/
-│   ├── dependency-graph/
-│   └── onboard/
-├── services/
-│   └── api.service.ts
-├── models/
-│   └── types.ts
-├── app.component.ts
-├── app.config.ts
-└── app.routes.ts
-```
-
-### 5. Run Development Server
-
-```bash
-ng serve
-```
-
-Navigate to `http://localhost:4200`
-
----
-
-## Features
-
-### 1. **PR List Dashboard** (`/`)
-
-- View all analyzed PRs
-- Risk level badges (LOW/MEDIUM/HIGH/CRITICAL)
-- Click to view details
-- Link to GitHub comments
-
-### 2. **PR Detail View** (`/pr/:id`)
-
-- Full impact analysis breakdown
-- Changed files
-- Backend affected files
-- Frontend affected files
-- Tests to update
-- Tabbed interface
-
-### 3. **Dependency Graph** (`/graph`)
-
-- Interactive vis.js graph
-- Color-coded nodes by type
-- Zoom/pan controls
-- Click nodes for details
-- Repository selector
-
-### 4. **Onboard Repos** (`/onboard`)
-
-- Form to submit repo URLs
-- Real-time onboarding status
-- Success metrics display
-
----
-
-## Architecture
-
-```
-Angular 17 (Standalone Components)
-├── Material Design UI
-├── vis.js for graph visualization
-├── HttpClient for API calls
-└── Reactive forms & routing
-```
-
----
-
-## API Integration
-
-Make sure your FastAPI backend is running on `http://localhost:8000`
-
-The frontend calls:
-
-- `GET /api/repos` - List repositories
-- `GET /api/prs` - List pull requests
-- `GET /api/graph?repo_name=X` - Get dependency graph
-- `POST /api/onboard` - Onboard new repos
-
----
-
-## Customization
-
-### Change Backend URL
-
-Edit `src/app/services/api.service.ts`:
-
-```typescript
-private baseUrl = 'http://your-backend-url/api';
-```
-
-### Theme Colors
-
-Edit `src/styles.scss` to change Material theme.
-
----
-
-## Production Build
-
-```bash
-ng build --configuration production
-```
-
-Output in `dist/` directory - deploy to any static host (Netlify, Vercel, GitHub Pages).
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
