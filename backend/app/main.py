@@ -13,6 +13,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 import os
+from config import settings
 
 
 
@@ -33,8 +34,8 @@ def startup():
 
 load_dotenv()
 
-SMTP_EMAIL = os.getenv("SMTP_EMAIL")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+SMTP_EMAIL = settings.smtp_email
+SMTP_PASSWORD = settings.smtp_password
 
 
 
@@ -63,30 +64,32 @@ class SubscribeRequest(BaseModel):
 def health_check():
     return {"status": "ok"}
 
-def send_email(to_email: str, subject: str, body: str):
+def send_email(to, subject, body):
     try:
-        msg = MIMEMultipart()
-        msg["From"] = SMTP_EMAIL
-        msg["To"] = to_email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "html"))
-
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.starttls()
+        print("Connecting to Gmail...")
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
         server.login(SMTP_EMAIL, SMTP_PASSWORD)
-        server.sendmail(SMTP_EMAIL, to_email, msg.as_string())
+        message = f"Subject: {subject}\n\n{body}"
+        server.sendmail(SMTP_EMAIL, to, message)
         server.quit()
-
-        print(f"Email sent to {to_email}")
-
+        print("Email delivered.")
     except Exception as e:
-        print("Email sending failed:", str(e))
+        print("SMTP ERROR:", e)
+        raise
+
 
 # helpers
 
 def extract_endpoints(scan_data):
-    """Extract endpoint strings from scan data."""
-    return [item.get("endpoint") for item in scan_data if "endpoint" in item]
+    """Convert scan item into a consistent endpoint string."""
+    endpoints = []
+    for item in scan_data:
+        method = item.get("Method") or item.get("method")
+        path = item.get("Path") or item.get("path")
+        if method and path:
+            endpoints.append(f"{method.upper()} {path}")
+    return endpoints
+
 
 
 def diff_endpoints(old_scan, new_scan):
@@ -123,6 +126,7 @@ def store_scan(request: ScanRequest, db: Session = Depends(get_db)):
             tag_name=request.tag_name,
             data=json.dumps(request.data)
         )
+        print(scan_details.repo_url, scan_details.commit, scan_details.name, scan_details.tag_name, scan_details.data)
         db.add(scan_details)
         db.commit()
 
@@ -146,38 +150,29 @@ def store_scan(request: ScanRequest, db: Session = Depends(get_db)):
         raise HTTPException(500, f"Scan failed: {str(e)}")
 
 
-def notify_subscribers(db: Session, project_name: str, changed_eps: List[str]):
-    """Find subscribers and send emails about changed endpoints."""
-    try:
-        subs = (
-            db.query(Subscription)
-            .filter(Subscription.project_name == project_name)
-            .all()
-        )
+def notify_subscribers(db, repo_name, changed_endpoints):
+    print("notify_subscribers called for:", repo_name, changed_endpoints)
 
-        for sub in subs:
-            subscribed_eps = json.loads(sub.endpoints)
+    subs = db.query(Subscription).filter(Subscription.project_name == repo_name).all()
+    print("subs:", subs)
 
-            # Find which of the changed endpoints this user cares about
-            hits = [ep for ep in changed_eps if ep in subscribed_eps]
 
-            if hits:
-                body = f"""
-                <h3>Changes detected in {project_name}</h3>
-                <p>The following endpoints you subscribed to have changed:</p>
-                <ul>
-                    {''.join(f'<li>{ep}</li>' for ep in hits)}
-                </ul>
-                """
 
-                send_email(
-                    to_email=sub.email,
-                    subject=f"🚨 API Changes in {project_name}",
-                    body=body
-                )
+    for sub in subs:
+        try:
+            print(f"Sending to {sub.email}...")
 
-    except Exception as e:
-        print("Subscriber notification failed:", str(e))
+            send_email(
+                to=sub.email,
+                subject=f"Endpoint changes detected in {repo_name}",
+                body="\n".join(changed_endpoints)
+            )
+
+            print("Email sent to:", sub.email)
+
+        except Exception as e:
+            print("EMAIL FAILED:", e)
+
 
 
 @app.get("/api/projects")
