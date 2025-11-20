@@ -14,6 +14,10 @@ from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 import os
 from config import settings
+import google.generativeai as genai
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import smtplib
 
 
 
@@ -36,6 +40,34 @@ load_dotenv()
 
 SMTP_EMAIL = settings.smtp_email
 SMTP_PASSWORD = settings.smtp_password
+GEMINI_API_KEY = settings.gemini_api_key
+
+CUSTOM_PROMPT = '''
+                Below are two scans of the same repository: the first is the previous scan, and the second is the new scan after changes.
+
+                Your output must follow this exact rule:
+
+                1. The FIRST word of your response must be only a boolean literal: "true" or "false".
+                   - "true" → the scans are different
+                   - "false" → the scans are identical
+
+                2. Immediately after the boolean, output a space and then an HTML document fragment.
+                   - Do NOT output markdown.
+                   - Do NOT put the HTML inside a code block.
+                   - Do NOT escape the HTML.
+                   - The HTML must be valid email-safe HTML (<p>, <b>, <ul>, <li>, <br>, etc.).
+
+                3. The HTML must include:
+                   - A short summary (<p>)
+                   - A list of impacted endpoints (<ul><li>)
+                   - A short explanation of the impact (<p>)
+
+                4. The response must look like:
+                   true <p>Summary...</p><ul>...</ul><p>Impact...</p>
+
+                Here are the scans (old scan first, new scan second):
+
+                '''
 
 
 
@@ -64,18 +96,20 @@ class SubscribeRequest(BaseModel):
 def health_check():
     return {"status": "ok"}
 
-def send_email(to, subject, body):
-    try:
-        print("Connecting to Gmail...")
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        server.login(SMTP_EMAIL, SMTP_PASSWORD)
-        message = f"Subject: {subject}\n\n{body}"
-        server.sendmail(SMTP_EMAIL, to, message)
-        server.quit()
-        print("Email delivered.")
-    except Exception as e:
-        print("SMTP ERROR:", e)
-        raise
+def send_email(to, subject, html_body):
+    server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+    server.login(SMTP_EMAIL, SMTP_PASSWORD)
+
+    msg = MIMEMultipart("alternative")
+    msg["From"] = SMTP_EMAIL
+    msg["To"] = to
+    msg["Subject"] = subject
+
+    html_part = MIMEText(html_body, "html", "utf-8")
+    msg.attach(html_part)
+
+    server.sendmail(SMTP_EMAIL, to, msg.as_string())
+    server.quit()
 
 
 # helpers
@@ -99,6 +133,65 @@ def diff_endpoints(old_scan, new_scan):
 
     changed = new_eps - old_eps
     return list(changed)
+
+
+
+
+def detect_changes(old_scan, new_scan, user_prompt: str, api_key: str) -> str:
+    """
+    Sends a full repository record + a user-defined prompt to the Gemini LLM.
+
+    :param record: Repository row as a dictionary.
+    :param user_prompt: Instruction for the LLM.
+    :param api_key: Gemini API key.
+    :return: Response string from Gemini.
+    """
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemini-2.0-flash")
+
+        payload = {
+            "record": {
+                "old": old_scan,
+                "new": new_scan,
+            }
+        }
+
+        llm_prompt = (
+            f"{user_prompt}\n\n"
+            f"{json.dumps(payload, indent=2)}"
+        )
+
+        response = model.generate_content(llm_prompt)
+        print(response.text)
+        return response.text
+
+    except Exception as e:
+        return f"Gemini LLM error: {e}"
+
+
+def notify_subscribers(db, repo_name, llm_response):
+    print("notify_subscribers called for:", repo_name)
+
+    subs = db.query(Subscription).filter(Subscription.project_name == repo_name).all()
+    print("subs:", subs)
+
+
+
+    for sub in subs:
+        try:
+            print(f"Sending to {sub.email}...")
+            send_email(
+                to=sub.email,
+                subject=f"Changes detected in {repo_name}",
+                html_body=llm_response
+            )
+
+            print("Email sent to:", sub.email)
+
+        except Exception as e:
+            print("EMAIL FAILED:", e)
+
 
 # api routes
 
@@ -135,43 +228,31 @@ def store_scan(request: ScanRequest, db: Session = Depends(get_db)):
             old_data = json.loads(previous_scan.data)
             new_data = request.data
 
-            changed_endpoints = diff_endpoints(old_data, new_data)
+            llm_response = detect_changes(old_data, new_data, CUSTOM_PROMPT, GEMINI_API_KEY)
 
-            if changed_endpoints:
-                print("Changed endpoints:", changed_endpoints)
+            first_space = llm_response.find(" ")
+            flag_text = llm_response[:first_space]
+            html_body = llm_response[first_space+1:]
 
-                # Notify subscribers
-                notify_subscribers(db, name, changed_endpoints)
+            changed_bool = flag_text.strip().lower().startswith("true")
 
-        return {"status": "ok"}
+            response = llm_response
+
+            if changed_bool:
+                print("There were changes..sending mail")
+                try:
+                    notify_subscribers(db, name, html_body)
+                except Exception as e:
+                    print("Notification error:", e)
+                    response = f"Notification error: {e}"
+
+        return response
 
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(500, f"Scan failed: {str(e)}")
 
 
-def notify_subscribers(db, repo_name, changed_endpoints):
-    print("notify_subscribers called for:", repo_name, changed_endpoints)
-
-    subs = db.query(Subscription).filter(Subscription.project_name == repo_name).all()
-    print("subs:", subs)
-
-
-
-    for sub in subs:
-        try:
-            print(f"Sending to {sub.email}...")
-
-            send_email(
-                to=sub.email,
-                subject=f"Endpoint changes detected in {repo_name}",
-                body="\n".join(changed_endpoints)
-            )
-
-            print("Email sent to:", sub.email)
-
-        except Exception as e:
-            print("EMAIL FAILED:", e)
 
 
 
@@ -297,3 +378,20 @@ def get_subscriptions(
             status_code=500,
             detail=f"Failed to fetch subscriptions: {str(e)}"
         )
+
+
+
+
+
+@app.get('/api/test-gemini-connection')
+def test_gemini_connection():
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel("gemini-2.0-flash")
+
+        response = model.generate_content("Say 'Gemini connection successful.'")
+        print("LLM Response:", response.text)
+        return {"message": response.text}
+
+    except Exception as e:
+        print("Connection / API Error:", e)
