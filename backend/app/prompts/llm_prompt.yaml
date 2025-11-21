@@ -12,19 +12,19 @@ custom_prompt: |
   Never output markdown, code blocks, or escaped HTML.
 
   Output HTML must contain, in this exact order:
-    1. <p>Summary of what changed</p>
+    1. <h2><b>Summary of what changed</b></h2>
 
-    2. <ul>Impacted Endpoints</ul>
+    2. <p><b>Impacted Endpoints</b></p>
        Include:
          - endpoints added/removed/modified in the scan delta
          - endpoints whose behavior changed based on the git diff
 
-    3. <ul>Impacted Components</ul>
+    3. <p><b>Impacted Components</b></p>
        Identify:
          - affected modules/files/classes/functions
          - any downstream dependencies that rely on these components
 
-    4. <p>Impact Explanation</p>
+    4. <p><b>Impact Explanation</b></p>
        Cover:
          - API contract changes
          - logic/behavior/validation changes
@@ -34,11 +34,11 @@ custom_prompt: |
          - event publishing/subscription changes
          - any other consumer-facing effects
 
-    5. <p>Risk Evaluation</p>
+    5. <p><b>Risk Evaluation</b></p>
        - classify severity (low/medium/high)
        - highlight critical areas requiring immediate attention
 
-    6. <p>Developer Guidance</p>
+    6. <p><b>Developer Guidance</b></p>
        - provide actionable next steps
        - suggest test cases or verification areas
 

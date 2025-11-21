@@ -33,7 +33,6 @@ SMTP_PASSWORD = settings.smtp_password
 GEMINI_API_KEY = settings.gemini_api_key
 GITHUB_TOKEN = settings.github_token
 
-
 app = FastAPI(title="Impact Analyzer API")
 
 # CORS
