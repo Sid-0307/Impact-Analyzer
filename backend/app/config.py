@@ -4,7 +4,7 @@ import os
 
 class Settings(BaseSettings):
     repos_path: Path = Path("./repos")
-    database_url: str = "sqlite:///./impact_analyzer.db"
+    database_url: str = "sqlite:///./data/impact_analyzer.db"
     gemini_api_key: str
     smtp_email: str
     smtp_password: str
