@@ -4,7 +4,14 @@ This repo contains 2 parts.
 
 The main server which constitues frontend and backend and the plugin present in the analyzer/ folder.
 
+## Overview
+Impact-analyzer is a plugin which scans code for changes and generates a report if changes are persent. This is done with a combination of scanning the repository and genai to track change and generate summary.
 
+
+## Architecture
+![Architecture](https://github.com/Sid-0307/Impact-Analyzer/blob/main/documentation/Architecture.png)
+
+## Execution
 ### Server
 The server constitues of the frontend and backend. Its a simple web app which allows you to browse the repositories present and subscribe to notifications as required.
 
