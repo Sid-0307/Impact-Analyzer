@@ -1,0 +1,5 @@
+name: 'Impact Analyzer'
+description: 'Detects changes in schema and notifies subscribed users'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'  
