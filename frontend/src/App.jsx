@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { GitBranch, Mail, Bell } from "lucide-react";
 import "./App.css";
 
-const API_URL = "http://localhost:8000";
+const API_URL = "https://impact-analyzer-mw0f.onrender.com";
 
 export default function App() {
   const [projects, setProjects] = useState([]);
