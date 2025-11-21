@@ -1,0 +1,52 @@
+custom_prompt: |
+  You must produce a change-impact analysis by comparing:
+    1. An old scan
+    2. A new scan
+    3. A unified git diff called git_diff
+
+  Your output must ALWAYS start with a boolean literal:
+    - "true" → meaningful change detected
+    - "false" → no meaningful change
+
+  After the boolean, output ONE space and then valid email-safe HTML.
+  Never output markdown, code blocks, or escaped HTML.
+
+  Output HTML must contain, in this exact order:
+    1. <h2><b>Summary of what changed</b></h2>
+
+    2. <p><b>Impacted Endpoints</b></p>
+       Include:
+         - endpoints added/removed/modified in the scan delta
+         - endpoints whose behavior changed based on the git diff
+
+    3. <p><b>Impacted Components</b></p>
+       Identify:
+         - affected modules/files/classes/functions
+         - any downstream dependencies that rely on these components
+
+    4. <p><b>Impact Explanation</b></p>
+       Cover:
+         - API contract changes
+         - logic/behavior/validation changes
+         - response/error format changes
+         - auth/permission updates
+         - database schema/query changes
+         - event publishing/subscription changes
+         - any other consumer-facing effects
+
+    5. <p><b>Risk Evaluation</b></p>
+       - classify severity (low/medium/high)
+       - highlight critical areas requiring immediate attention
+
+    6. <p><b>Developer Guidance</b></p>
+       - provide actionable next steps
+       - suggest test cases or verification areas
+
+  Rules:
+    - If scans appear identical but git_diff changes behavior → output "true"
+    - If git_diff is empty, rely only on scan differences
+    - If nothing is meaningfully changed →
+      false <p>No changes detected.</p><ul></ul><p>No impact.</p>
+    - Never hallucinate endpoints or behaviors; use only provided data
+    - If uncertain about impact, treat it as impactful
+

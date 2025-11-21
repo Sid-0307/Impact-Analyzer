@@ -12,6 +12,7 @@ services:
       GEMINI_API_KEY:
       SMTP_EMAIL:
       SMTP_PASSWORD:
+      GITHUB_TOKEN:
 
   frontend:
     build:
