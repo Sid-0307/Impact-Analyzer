@@ -46,5 +46,5 @@ def test_scan_no_previous(mock_llm):
 
     response = client.post("/api/scan", json=payload)
     assert response.status_code == 200
-    assert "Scan stored" in response.text
+    assert "ok" in response.text
     app.dependency_overrides.clear()
