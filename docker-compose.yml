@@ -13,6 +13,8 @@ services:
       SMTP_EMAIL:
       SMTP_PASSWORD:
       GITHUB_TOKEN:
+    volumes:
+      - db-data:/app/data
 
   frontend:
     build:
@@ -23,3 +25,6 @@ services:
       - "80:80"
     depends_on:
       - backend
+
+volumes:
+  db-data:
