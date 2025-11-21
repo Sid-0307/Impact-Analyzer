@@ -6,21 +6,32 @@ from typing import List
 import json
 import traceback
 from pathlib import Path
-from database import get_db, init_db
-from models import Repository, PullRequest, ScanDetails,Subscription
+from .database import get_db, init_db
+from .models import Repository, PullRequest, ScanDetails,Subscription
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from dotenv import load_dotenv
 import os
-from config import settings
+from .config import settings
 import google.generativeai as genai
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import smtplib
 import requests
 from urllib.parse import urlparse
+import yaml
+from pathlib import Path
 
+PROMPT_FILE = Path(__file__).parent / "prompts" / "llm_prompt.yaml"
+
+with open(PROMPT_FILE, "r") as f:
+    prompt_data = yaml.safe_load(f)
+CUSTOM_PROMPT = prompt_data["custom_prompt"]
+
+SMTP_EMAIL = settings.smtp_email
+SMTP_PASSWORD = settings.smtp_password
+GEMINI_API_KEY = settings.gemini_api_key
+GITHUB_TOKEN = settings.github_token
 
 
 app = FastAPI(title="Impact Analyzer API")
@@ -37,63 +48,6 @@ app.add_middleware(
 @app.on_event("startup")
 def startup():
     init_db()
-
-load_dotenv()
-
-SMTP_EMAIL = settings.smtp_email
-SMTP_PASSWORD = settings.smtp_password
-GEMINI_API_KEY = settings.gemini_api_key
-GITHUB_TOKEN = settings.github_token
-
-CUSTOM_PROMPT = '''
-                Below are two scans of the same repository: the first is the previous scan, and the second is the new scan after changes. You are also provided with a unified Git diff called `git_diff`, which may be empty if there are no code changes.
-
-                You must analyze BOTH sources of information:
-                1. The scan differences (old vs new)
-                2. The code-level diff in `git_diff`
-
-                Your goal is to detect ANY meaningful change that could impact consumers of this project — including changes that cannot be inferred from the scan deltas alone.
-
-                Your output must follow this exact rule:
-
-                1. The FIRST word of your response must be only a boolean literal: "true" or "false".
-                   - "true" → the scans or the underlying behavior have changed in ANY meaningful way
-                   - "false" → there are NO meaningful differences in either the scans or the behavior
-
-                2. Immediately after the boolean, output a space and then an HTML document fragment.
-                   - Do NOT output markdown.
-                   - Do NOT put the HTML inside a code block.
-                   - Do NOT escape the HTML.
-                   - The HTML must be valid email-safe HTML (<p>, <b>, <ul>, <li>, <br>, etc.).
-
-                3. The HTML must include:
-                   - A short summary (<p>) of what changed
-                   - A list of impacted endpoints (<ul><li>)
-                       * Include endpoints added/removed/modified in the scan delta
-                       * Include endpoints whose behavior has changed due to code_diff
-                   - A short explanation of the impact (<p>) that covers ALL relevant surfaces:
-                       * API structure or contract changes
-                       * Behavioral changes (logic changes, validation changes, new conditions, altered calculations)
-                       * Response format or error-handling changes
-                       * Authentication or permission changes
-                       * Database schema or query changes
-                       * Event publishing/subscription changes
-                       * Any other functional or operational changes affecting downstream dependents
-
-                4. The response must look like:
-                   true <p>Summary...</p><ul>...</ul><p>Impact...</p>
-
-                Rules for interpretation:
-                - If scan data shows no difference but git_diff modifies behavior, return "true".
-                - If git_diff is empty, rely only on scan differences.
-                - If both scan data AND git_diff show no meaningful changes, return:
-                  false <p>No changes detected.</p><ul></ul><p>No impact.</p>
-                - Never invent or hallucinate endpoints or behaviors. Base all observations strictly on the provided scans and git_diff.
-                - If you are uncertain whether something affects behavior, err on the side of marking the change as impactful.
-
-                Here are the scans (old scan first, new scan second), followed by the git diff:
-                '''
-
 
 
 class OnboardRequest(BaseModel):
