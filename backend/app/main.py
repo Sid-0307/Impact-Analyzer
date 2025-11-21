@@ -6,13 +6,13 @@ from typing import List
 import json
 import traceback
 from pathlib import Path
-from .database import get_db, init_db
-from .models import Repository, PullRequest, ScanDetails,Subscription
+from database import get_db, init_db
+from models import Repository, PullRequest, ScanDetails,Subscription
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
-from .config import settings
+from config import settings
 import google.generativeai as genai
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
