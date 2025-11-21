@@ -18,6 +18,8 @@ import google.generativeai as genai
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import smtplib
+import requests
+from urllib.parse import urlparse
 
 
 
@@ -41,15 +43,22 @@ load_dotenv()
 SMTP_EMAIL = settings.smtp_email
 SMTP_PASSWORD = settings.smtp_password
 GEMINI_API_KEY = settings.gemini_api_key
+GITHUB_TOKEN = settings.github_token
 
 CUSTOM_PROMPT = '''
-                Below are two scans of the same repository: the first is the previous scan, and the second is the new scan after changes.
+                Below are two scans of the same repository: the first is the previous scan, and the second is the new scan after changes. You are also provided with a unified Git diff called `git_diff`, which may be empty if there are no code changes.
+
+                You must analyze BOTH sources of information:
+                1. The scan differences (old vs new)
+                2. The code-level diff in `git_diff`
+
+                Your goal is to detect ANY meaningful change that could impact consumers of this project — including changes that cannot be inferred from the scan deltas alone.
 
                 Your output must follow this exact rule:
 
                 1. The FIRST word of your response must be only a boolean literal: "true" or "false".
-                   - "true" → the scans are different
-                   - "false" → the scans are identical
+                   - "true" → the scans or the underlying behavior have changed in ANY meaningful way
+                   - "false" → there are NO meaningful differences in either the scans or the behavior
 
                 2. Immediately after the boolean, output a space and then an HTML document fragment.
                    - Do NOT output markdown.
@@ -58,15 +67,31 @@ CUSTOM_PROMPT = '''
                    - The HTML must be valid email-safe HTML (<p>, <b>, <ul>, <li>, <br>, etc.).
 
                 3. The HTML must include:
-                   - A short summary (<p>)
+                   - A short summary (<p>) of what changed
                    - A list of impacted endpoints (<ul><li>)
-                   - A short explanation of the impact (<p>)
+                       * Include endpoints added/removed/modified in the scan delta
+                       * Include endpoints whose behavior has changed due to code_diff
+                   - A short explanation of the impact (<p>) that covers ALL relevant surfaces:
+                       * API structure or contract changes
+                       * Behavioral changes (logic changes, validation changes, new conditions, altered calculations)
+                       * Response format or error-handling changes
+                       * Authentication or permission changes
+                       * Database schema or query changes
+                       * Event publishing/subscription changes
+                       * Any other functional or operational changes affecting downstream dependents
 
                 4. The response must look like:
                    true <p>Summary...</p><ul>...</ul><p>Impact...</p>
 
-                Here are the scans (old scan first, new scan second):
+                Rules for interpretation:
+                - If scan data shows no difference but git_diff modifies behavior, return "true".
+                - If git_diff is empty, rely only on scan differences.
+                - If both scan data AND git_diff show no meaningful changes, return:
+                  false <p>No changes detected.</p><ul></ul><p>No impact.</p>
+                - Never invent or hallucinate endpoints or behaviors. Base all observations strictly on the provided scans and git_diff.
+                - If you are uncertain whether something affects behavior, err on the side of marking the change as impactful.
 
+                Here are the scans (old scan first, new scan second), followed by the git diff:
                 '''
 
 
@@ -136,6 +161,54 @@ def diff_endpoints(old_scan, new_scan):
 
 
 
+def parse_repo_url(repo_url):
+    path = urlparse(repo_url).path.strip("/")
+    owner, repo = path.split("/", 1)
+
+    # remove .git suffix if present
+    if repo.endswith(".git"):
+        repo = repo[:-4]
+
+    return owner, repo
+
+
+def getDiff(old_scan, new_scan):
+    owner, repo = parse_repo_url(old_scan.repo_url)
+    base = old_scan.commit
+    head = new_scan.commit
+
+    print("Comparing commits:")
+    print("Owner:", owner)
+    print("Repo:", repo)
+    print("Base:", base)
+    print("Head:", head)
+
+    # sanity check first
+    for sha in [base, head]:
+        commit_check = f"https://api.github.com/repos/{owner}/{repo}/commits/{sha}"
+        r = requests.get(commit_check, headers={
+            "Authorization": f"Bearer {GITHUB_TOKEN}"
+        })
+        print("Check commit:", sha, r.status_code)
+        if r.status_code != 200:
+            raise Exception(f"Commit {sha} does not exist on GitHub.")
+
+    # now compare
+    url = f"https://api.github.com/repos/{owner}/{repo}/compare/{base}...{head}"
+    headers = {
+        "Accept": "application/vnd.github.v3.diff",
+        "Authorization": f"Bearer {GITHUB_TOKEN}"
+    }
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code != 200:
+        raise Exception(f"GitHub API error {response.status_code}: {response.text}")
+
+    return response.text
+
+
+
 
 def detect_changes(old_scan, new_scan, user_prompt: str, api_key: str) -> str:
     """
@@ -150,10 +223,18 @@ def detect_changes(old_scan, new_scan, user_prompt: str, api_key: str) -> str:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel("gemini-2.0-flash")
 
+        old_data = json.loads(old_scan.data)
+        new_data = json.loads(new_scan.data)
+
+        diff = getDiff(old_scan, new_scan)
+
+        print("diff: ",diff)
+
         payload = {
             "record": {
-                "old": old_scan,
-                "new": new_scan,
+                "old": old_data,
+                "new": new_data,
+                "git_diff": diff
             }
         }
 
@@ -223,12 +304,14 @@ def store_scan(request: ScanRequest, db: Session = Depends(get_db)):
         db.add(scan_details)
         db.commit()
 
+        response = {"message": "Scan stored. No previous scan to compare."}
+
         # ---- Compare with previous & detect changes ----
         if previous_scan:
             old_data = json.loads(previous_scan.data)
             new_data = request.data
 
-            llm_response = detect_changes(old_data, new_data, CUSTOM_PROMPT, GEMINI_API_KEY)
+            llm_response = detect_changes(previous_scan, scan_details, CUSTOM_PROMPT, GEMINI_API_KEY)
 
             first_space = llm_response.find(" ")
             flag_text = llm_response[:first_space]
