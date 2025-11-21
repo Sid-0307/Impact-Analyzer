@@ -12,34 +12,10 @@ tests/test_health.py .                                                   [ 20%]
 tests/test_helpers.py ...                                                [ 50%]
 tests/test_llm.py .                                                      [ 60%]
 tests/test_projects.py .                                                 [ 70%]
-tests/test_scan_api.py F                                                 [ 80%]
+tests/test_scan_api.py .                                                 [ 80%]
 tests/test_subscriptions.py .                                            [ 90%]
 tests/test_subscriptions_full.py .                                       [100%]
 
-=================================== FAILURES ===================================
-____________________________ test_scan_no_previous _____________________________
-
-mock_llm = <MagicMock name='detect_changes' id='4502682400'>
-
-    @patch("app.main.detect_changes", return_value="false <p>No changes detected</p>")
-    def test_scan_no_previous(mock_llm):
-        app.dependency_overrides[get_db] = fake_db
-        payload = {
-            "repo_url": "https://github.com/test/repo",
-            "commit": "abc123",
-            "tag_name": "v1",
-            "data": [{"method": "GET", "path": "/x"}]
-        }
-    
-        response = client.post("/api/scan", json=payload)
-        assert response.status_code == 200
->       assert "Scan stored" in response.text
-E       assert 'Scan stored' in '"ok"'
-E        +  where '"ok"' = <Response [200 OK]>.text
-
-tests/test_scan_api.py:49: AssertionError
------------------------------ Captured stdout call -----------------------------
-https://github.com/test/repo abc123 repo v1 [{"method": "GET", "path": "/x"}]
 =============================== warnings summary ===============================
 ../../../../Library/Python/3.9/lib/python/site-packages/starlette/formparsers.py:12
   /Users/pranithred/Library/Python/3.9/lib/python/site-packages/starlette/formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.
@@ -90,6 +66,4 @@ app/models.py        57      6    89%   19, 23, 40, 44, 59, 63
 TOTAL               321    100    69%
 Coverage annotated source written to dir reports/annotate
 Coverage XML written to file reports/coverage.xml
-=========================== short test summary info ============================
-FAILED tests/test_scan_api.py::test_scan_no_previous - assert 'Scan stored' i...
-=================== 1 failed, 9 passed, 6 warnings in 1.46s ====================
+======================== 10 passed, 6 warnings in 1.44s ========================
