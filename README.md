@@ -11,15 +11,19 @@ The server constitues of the frontend and backend. Its a simple web app which al
 #### How to run
 Add env variables in ./docker-compose.yml
 Get the GEMINI_API_KEY from `https://aistudio.google.com/api-keys`
+
 SMTP_EMAIL is the email address from which the mail has to be sent
+
 SMTP_PASSWORD is the password for authentication, please refer to the SMTP client to know how to get the password
 
 *To start the service*
+
 `
 docker compose up -d
 `
 
 *To stop the service*
+
 `
 docker compose down
 `
@@ -29,12 +33,14 @@ The analyzer is a spring boot application which scans a repo and provide the det
 
 #### How to run
 To build the image
+
 `
 cd ./analyzer/
 docker build -t java-scanner .
 `
 
 To run(NOTE: Ensure that the main server is running, Refer to the above steps)
+
 `
 docker run --rm --network host java-scanner:latest <COMMIT-ID> <REPO-URL> <TAG>
 `
