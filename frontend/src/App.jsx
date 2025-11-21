@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { GitBranch, Mail, Bell } from "lucide-react";
-import "./app.css";
+import "./App.css";
 
 const API_URL = "http://localhost:8000";
 
@@ -109,9 +109,8 @@ export default function App() {
           {projects.map((p) => (
             <button
               key={p.name}
-              className={`project-item ${
-                selectedProject === p.name ? "active" : ""
-              }`}
+              className={`project-item ${selectedProject === p.name ? "active" : ""
+                }`}
               onClick={() => loadProjectDetails(p.name)}
             >
               <strong>{p.name}</strong>
@@ -179,8 +178,8 @@ export default function App() {
                         {selectedEndpoints.length === 0
                           ? "Select endpoints"
                           : selectedEndpoints.length === all.length
-                          ? "Subscribe to All"
-                          : `Subscribe (${selectedEndpoints.length})`}
+                            ? "Subscribe to All"
+                            : `Subscribe (${selectedEndpoints.length})`}
                       </button>
                     </div>
 

@@ -246,7 +246,7 @@ def store_scan(request: ScanRequest, db: Session = Depends(get_db)):
                     print("Notification error:", e)
                     response = f"Notification error: {e}"
 
-        return response
+        return "ok" 
 
     except Exception as e:
         traceback.print_exc()

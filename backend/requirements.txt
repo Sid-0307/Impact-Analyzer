@@ -20,3 +20,5 @@ python-dotenv==1.0.0
 pyyaml==6.0.1
 
 py4j==0.10.9.9
+
+google-generativeai==0.8.5
