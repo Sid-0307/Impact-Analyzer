@@ -9,16 +9,11 @@ sqlalchemy==2.0.23
 # GitHub
 PyGithub==2.1.1
 
-# Java parsing
-javalang==0.13.0
-
 # Git
 GitPython==3.1.40
 
 # Utils
 python-dotenv==1.0.0
 pyyaml==6.0.1
-
-py4j==0.10.9.9
 
 google-generativeai==0.8.5
